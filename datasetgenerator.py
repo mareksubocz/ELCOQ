@@ -62,6 +62,8 @@ class DatasetGenerator:
             car_consumption = np.random.randint(min_consumption, max_consumption+1, len(self.available_car_speeds))
             self.car_types_consumptions.append(np.sort(car_consumption))
 
+        return self.car_types_battery, self.car_types_consumptions
+
         #TODO make sure that cars can travel the motorway with only one charging
 
     def generate_car_instances_density(self, density=None):
