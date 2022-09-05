@@ -16,21 +16,21 @@ class DatasetGenerator:
             self.length = length
 
         if n_nodes is None:
-            n_nodes = round(length / node_freq) + 2
+            n_nodes = round(self.length / node_freq) + 2
         elif n_nodes < 2:
             raise ValueError('Number of nodes must not be less than 2')
 
         if n_stations is None:
-            n_stations = round(length / station_freq) + 1
+            n_stations = round(self.length / station_freq) + 1
 
         elif n_stations < 1:
             raise ValueError('Number of stations must not be less than 1')
 
-        nodes = np.sort(np.random.randint(1, length, n_nodes-2))
-        nodes = np.append(nodes, length)
+        nodes = np.sort(np.random.randint(1, self.length, n_nodes-2))
+        nodes = np.append(nodes, self.length)
         self.nodes = np.insert(nodes, 0, 0)
 
-        self.stations = np.sort(np.random.randint(1, length, n_stations))
+        self.stations = np.sort(np.random.randint(1, self.length, n_stations))
         self.chargers = np.random.randint(n_chargers_min, n_chargers_max+1, n_stations)
 
         return self.length, self.nodes, self.stations, self.chargers
