@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 class DatasetGenerator:
     def __init__(self, max_length=500, available_car_speeds=[60, 70, 80, 90, 100, 110], charging_speed=22):
@@ -62,32 +63,58 @@ class DatasetGenerator:
             car_consumption = np.random.randint(min_consumption, max_consumption+1, len(self.available_car_speeds))
             self.car_types_consumptions.append(np.sort(car_consumption))
 
-        return self.car_types_battery, self.car_types_consumptions
+        self.car_info = pd.DataFrame(np.hstack([self.car_types_battery.reshape(-1, 1), np.asarray(self.car_types_consumptions)]), columns=['capacity'] + list(map(str, self.available_car_speeds)))
+        return self.car_info
 
-        #TODO make sure that cars can travel the motorway with only one charging
+    def generate_car_instances(self, density=3.0, sim_length=1.0, n_cars=None, sim_seconds=None):
 
-    def generate_car_instances_density(self, density=None):
-        sum_c = np.sum(self.chargers)
-        n_cars = round(sum_c * density)
-        if n_cars < 1:
-            raise ValueError('Too low density, make it bigger')
-        return self.generate_car_instances(n_cars)
-
-
-    def generate_car_instances(self, n_cars):
-        if n_cars < 1:
-            raise ValueError('There must be at least one car')
         max_battery_size = max(self.car_types_battery)
         min_speed = min(self.available_car_speeds)
 
-        simulation_time = self.length/min_speed + max_battery_size/self.charging_speed
-        simulation_time_seconds = round(simulation_time * 60 * 60)
+        if sim_seconds is not None:
+            simulation_time_seconds = sim_seconds
+        else:
+            simulation_time = (self.length/min_speed + max_battery_size/self.charging_speed) * sim_length
+            simulation_time_seconds = round(simulation_time * 60 * 60)
+
+        cars, feasible_solution = self._generate_cars(simulation_time_seconds)
+
+        if n_cars is not None:
+            if n_cars < 1:
+                raise ValueError('There must be at least one car')
+            n_to_choose = min(n_cars, len(cars))
+        else:
+            sum_c = np.sum(self.chargers)
+            n_cars = round(sum_c * density)
+            n_to_choose = min(n_cars, len(cars))
+
+        selected_cars_indices = np.random.choice(np.arange(len(cars)), n_to_choose, replace=False)
+        selected_cars = cars[selected_cars_indices]
+        selected_feasible_solution = feasible_solution[selected_cars_indices]
+
+        self.selected_cars = selected_cars
+        self.selected_feasible_solution = selected_feasible_solution
+        columns = [('car_type', int),
+                   ('entry_node_index', int),
+                   ('entry_timestamp', int),
+                   ('exit_node_index', int),
+                   ('initial_energy', float)
+                   ]
+        instance = pd.DataFrame(selected_cars, columns=[x[0] for x in columns])
+        self.instance = instance.astype(dtype={x:y for (x, y) in columns})
+
+        return self.instance
+
+
+    def _generate_cars(self, simulation_time_seconds):
+        if simulation_time_seconds < 600:
+            raise ValueError('Simulation time must be greater than 600 seconds')
+
         car_charging_times = np.ceil((np.asarray(self.car_types_battery) / self.charging_speed) * 60 * 60).astype(int)
         car_max_distances = np.asarray(self.car_types_battery) / np.min(self.car_types_consumptions, axis=1) * 1000
 
         cars = []
         feasible_solution = []
-        #for car in range(n_cars):
         for i, station in enumerate(self.stations):
             for charger in range(self.chargers[i]):
                 current_time = 0
@@ -101,27 +128,20 @@ class DatasetGenerator:
                     diff_entry_station = station - self.nodes[entry_node]
                     consumed = diff_entry_station * np.min(self.car_types_consumptions, axis=1)[car_type] / 1000
                     consumed_percent = consumed/self.car_types_battery[car_type]
-                    started_with = np.ceil((consumed_percent + (1-consumed_percent) * np.random.random())*100)/100
-                    second_to_charge = np.ceil(car_charging_times[car_type] * (started_with - consumed_percent))
-                    current_time += second_to_charge
+                    initial_energy = np.ceil((consumed_percent + (1-consumed_percent) * np.random.random())*100)/100
+                    seconds_to_charge = np.ceil(car_charging_times[car_type] * (initial_energy - consumed_percent))
+                    current_time += seconds_to_charge
 
                     car_start_time = current_time - np.ceil(diff_entry_station/self.available_car_speeds[0]*60*60)
                     possible_out_nodes = np.logical_and(nodes_station_distance < car_max_distance, nodes_station_distance > 0)
                     out_node = np.random.choice(np.arange(len(self.nodes))[possible_out_nodes])
 
-                    cars.append([car_type[0], entry_node, car_start_time[0], out_node, started_with[0]])
+                    cars.append([car_type[0], entry_node, car_start_time[0], out_node, initial_energy[0]])
                     feasible_solution.append(i)
 
         cars = np.asarray(cars)
         min_timestamp = min(cars[:, 2])
         cars[:, 2] += abs(min_timestamp)
         feasible_solution = np.asarray(feasible_solution)
-        selected_cars_indices = np.random.choice(np.arange(len(cars)), n_cars)
-        selected_cars = cars[selected_cars_indices]
-        selected_feasible_solution = feasible_solution[selected_cars_indices]
-        return selected_cars, selected_feasible_solution
 
-
-
-
-a = 1
+        return cars, feasible_solution
