@@ -23,7 +23,6 @@ def instance_to_matrix(instance, nodes, stations):
 
     return collision_matrix
 
-
 def matrix_to_bqm(cars: pd.DataFrame, conflict_matrix: np.ndarray):
     conflict_strength = 1
     onehot_strength = 1
