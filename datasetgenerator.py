@@ -63,7 +63,7 @@ class DatasetGenerator:
             car_consumption = np.random.randint(min_consumption, max_consumption+1, len(self.available_car_speeds))
             self.car_types_consumptions.append(np.sort(car_consumption))
 
-        self.car_info = pd.DataFrame(np.hstack([self.car_types_battery.reshape(-1, 1), np.asarray(self.car_types_consumptions)]), columns=['capacity'] + list(map(str, self.available_car_speeds)))
+        self.car_info = pd.DataFrame(np.hstack([self.car_types_battery.reshape(-1, 1), np.asarray(self.car_types_consumptions)]), columns=['capacity'] + list(self.available_car_speeds))
         return self.car_info
 
     def generate_car_instances(self, density=3.0, sim_length=1.0, n_cars=None, sim_seconds=None):
@@ -98,7 +98,7 @@ class DatasetGenerator:
                    ('entry_node_index', int),
                    ('entry_timestamp', int),
                    ('exit_node_index', int),
-                   ('initial_energy', float)
+                   ('entry_energy', float)
                    ]
         instance = pd.DataFrame(selected_cars, columns=[x[0] for x in columns])
         self.instance = instance.astype(dtype={x:y for (x, y) in columns})
