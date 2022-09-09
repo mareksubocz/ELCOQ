@@ -129,7 +129,7 @@ class DatasetGenerator:
                     consumed = diff_entry_station * np.min(self.car_types_consumptions, axis=1)[car_type] / 1000
                     consumed_percent = consumed/self.car_types_battery[car_type]
                     initial_energy = np.ceil((consumed_percent + (1-consumed_percent) * np.random.random())*100)/100
-                    seconds_to_charge = np.ceil(car_charging_times[car_type] * (initial_energy - consumed_percent))
+                    seconds_to_charge = np.ceil(car_charging_times[car_type] * (1 - (initial_energy - consumed_percent)))
                     current_time += seconds_to_charge
 
                     car_start_time = current_time - np.ceil(diff_entry_station/self.available_car_speeds[0]*60*60)
