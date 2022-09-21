@@ -2,10 +2,12 @@ import numpy as np
 import pandas as pd
 
 class DatasetGenerator:
-    def __init__(self, max_length=500, available_car_speeds=[60, 70, 80, 90, 100, 110], charging_speed=22):
+    def __init__(self, max_length=500, available_car_speeds=[60, 70, 80, 90, 100, 110], charging_speed=22, seed=None):
         self.max_length = max_length
         self.available_car_speeds = available_car_speeds
         self.charging_speed = charging_speed
+        if seed is not None:
+            np.random.seed(seed)
 
     def generate_highway(self, length=None, n_nodes=None, node_freq=15, n_stations=None, station_freq=25, n_chargers_min=2, n_chargers_max=3):
 
@@ -107,8 +109,8 @@ class DatasetGenerator:
 
 
     def _generate_cars(self, simulation_time_seconds):
-        if simulation_time_seconds < 600:
-            raise ValueError('Simulation time must be greater than 600 seconds')
+        if simulation_time_seconds < 300:
+            raise ValueError('Simulation time must be greater than 300 seconds')
 
         car_charging_times = np.ceil((np.asarray(self.car_types_battery) / self.charging_speed) * 60 * 60).astype(int)
         car_max_distances = np.asarray(self.car_types_battery) / np.min(self.car_types_consumptions, axis=1) * 1000
