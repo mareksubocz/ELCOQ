@@ -38,7 +38,7 @@ def instance_to_matrix(instance,car_info, length, nodes, stations, chargers, ava
         for index2, row2 in im.iterrows():
             if index2 <= index1:
                 continue
-            if row1['station_index'] == row2['station_index']:
+            if row1['station_index'] != row2['station_index']:
                 continue
             # first to come should be row1
             if row2['station_timestamp'] >= row1['station_timestamp']:
