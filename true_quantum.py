@@ -9,6 +9,9 @@ from datasetgenerator import DatasetGenerator
 from annealing import instance_to_matrix
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.opflow import PauliSumOp, DictStateFn
+from datetime import datetime
+
+import utils
 
 #from qiskit.opflow.state_fns import OperatorStateFn
 
@@ -85,14 +88,31 @@ def get_onehot_hamiltonian(onehot, n):
     return onehot_hamiltonian
 
 
-available_car_speeds = [60, 100]
+logdir = 'logdir' + '/' + datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+instance_name = 'small_instance'
+data_path = 'data/{}'.format(instance_name)
 
+'''available_car_speeds = [60, 100]
 dsg = DatasetGenerator(max_length=500, available_car_speeds=available_car_speeds, charging_speed=22, seed=5)
 length, nodes, stations, chargers = dsg.generate_highway(30)
 car_info = dsg.generate_car_types(2)
-instance = dsg.generate_car_instances(10.0, 0.1)
+instance, feasible_solution = dsg.generate_car_instances(10.0, 0.1)
+instance_info = {'available_car_speeds': available_car_speeds,
+                'length': length,
+                'nodes': nodes,
+                'stations': stations,
+                'chargers': chargers,
+                'feasible_solution': feasible_solution}
 
-collision_matrix, im = instance_to_matrix(instance,car_info, length, nodes, stations, chargers, available_car_speeds, charging_speed=22)
+utils.save_instance_data(car_info, instance_info, instance, data_path)'''
+car_info, instance_info, instance = utils.load_instance_data(data_path)
+length = instance_info['length']
+nodes = instance_info['nodes']
+stations = instance_info['stations']
+chargers = instance_info['chargers']
+available_car_speeds = instance_info['available_car_speeds']
+
+collision_matrix, im = instance_to_matrix(instance,car_info, nodes, stations, available_car_speeds, charging_speed=22)
 conflicts = get_collisions(collision_matrix, im, chargers)
 onehot = get_onehot(im)
 
@@ -115,7 +135,13 @@ for p in range(1, 6):
         prob_zero = sum(res_df[res_df['energy'] == 0]['prob_squared'] ** 2)
         print(prob_zero)
         prob_zero_mean += prob_zero
+
+        energy = sum(res_df['energy']*res_df['prob_squared']**2)
+        utils.save_true_quantum_result(res_df, logdir, instance_name, p, energy)
     print('p: {}, prob_zero: {}'.format(p, prob_zero_mean / 10))
+
+
+
 
 #{k: abs(v) for k, v in hamiltonian.eval(DictStateFn({k: v**2 for k, v in result.eigenstate.items()})).primitive.items()}
 a = 1

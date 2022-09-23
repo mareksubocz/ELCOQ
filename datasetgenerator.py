@@ -36,7 +36,7 @@ class DatasetGenerator:
         self.stations = np.sort(np.random.randint(1, self.length, n_stations))
         self.chargers = np.random.randint(n_chargers_min, n_chargers_max+1, n_stations)
 
-        return self.length, self.nodes, self.stations, self.chargers
+        return self.length, self.nodes.tolist(), self.stations.tolist(), self.chargers.tolist()
 
     def generate_car_types(self, n, min_kVh=10, max_kWh=30, min_consumption=80, max_consumption=250):
 
@@ -105,7 +105,7 @@ class DatasetGenerator:
         instance = pd.DataFrame(selected_cars, columns=[x[0] for x in columns])
         self.instance = instance.astype(dtype={x:y for (x, y) in columns})
 
-        return self.instance
+        return self.instance, self.selected_feasible_solution.tolist()
 
 
     def _generate_cars(self, simulation_time_seconds):

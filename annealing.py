@@ -6,7 +6,8 @@ from datasetgenerator import DatasetGenerator
 from dwave.system import DWaveSampler, LeapHybridSampler, LeapHybridCQMSampler
 import dimod
 
-def instance_to_matrix(instance,car_info, length, nodes, stations, chargers, available_car_speeds, charging_speed):
+def instance_to_matrix(instance,car_info, nodes, stations, available_car_speeds, charging_speed):
+    nodes = np.asarray(nodes)
     '''dsg = DatasetGenerator(max_length=500, available_car_speeds=[60, 70], charging_speed=22)
     length, nodes, stations, chargers = dsg.generate_highway(100)
     car_info = dsg.generate_car_types(2)
