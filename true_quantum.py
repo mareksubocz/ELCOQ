@@ -1,5 +1,5 @@
 from qiskit.algorithms import QAOA
-from qiskit.algorithms.optimizers import COBYLA
+from qiskit.algorithms.optimizers import COBYLA, SPSA
 from qiskit import Aer
 import pandas as pd
 
@@ -10,6 +10,13 @@ from annealing import instance_to_matrix
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.opflow import PauliSumOp, DictStateFn
 from datetime import datetime
+
+from qiskit import IBMQ
+from qiskit.providers.ibmq import least_busy
+
+from qiskit.providers.fake_provider import FakeKolkataV2
+
+from qiskit_ibm_runtime import QiskitRuntimeService
 
 import utils
 
@@ -121,16 +128,67 @@ onehot_hamiltonian = get_onehot_hamiltonian(onehot, len(im))
 
 hamiltonian = (conflict_hamiltonian + onehot_hamiltonian).reduce()
 
-optimizer = COBYLA()
+#optimizer = COBYLA()
+optimizer = SPSA()
 
+IBMQ.load_account()
+#provider = IBMQ.get_provider('ibm-q-psnc', 'internal', 'reservations')
+provider = IBMQ.get_provider('ibm-q-psnc', 'internal', 'default')
+backend = provider.get_backend('ibmq_kolkata')
+#backend = FakeKolkataV2()
+providers = [x for x in provider.backends() if 'simulator' not in x.name()]
+
+options = {
+	#'backend_name': 'ibmq_toronto'
+    #'backend_name': 'ibm_hanoi',
+    'backend_name': 'ibmq_mumbai'
+    #'backend_name': least_busy(providers).name()
+}
+
+from qiskit_ibm_runtime import QiskitRuntimeService
+
+# Save your credentials on disk.
+#QiskitRuntimeService.save_account(channel='ibm_quantum', token='1e637c6bc70c02597cfc4f76b572766876969710b364e11205257964a1faa557e2fba978074ce75befd5ede100b73e06cde673d7c872257ae81b03e91bf93a06')
+
+'''service = QiskitRuntimeService(
+    channel='ibm_quantum',
+    instance='ibm-q-psnc/internal/default',
+)'''
+
+service = QiskitRuntimeService(
+	channel='ibm_quantum'
+)
 
 for p in range(1, 6):
+
     prob_zero_mean = 0
-    for i in range(10):
-        qaoa = QAOA(optimizer, quantum_instance=Aer.get_backend('aer_simulator'), reps=p)
-        result = qaoa.compute_minimum_eigenvalue(hamiltonian)
-        keys, values = zip(*result.eigenstate.items())
-        energies = abs(np.asarray(list(hamiltonian.eval(DictStateFn({k: 1 for k, _ in result.eigenstate.items()})).primitive.values())))
+    runtime_inputs = {
+        'optimizer': optimizer,
+        'operator': hamiltonian,
+        'use_swap_strategies': False,
+        'optimization_level': 3,
+        #'measurement_error_mitigation': True,
+        #'use_initial_mapping': True,
+        #'use_pulse_efficient': True,
+        'reps': p
+    }
+
+    for i in range(1):
+        #qaoa = QAOA(optimizer, quantum_instance=Aer.get_backend('aer_simulator'), reps=p)
+        #qaoa = QAOA(optimizer, quantum_instance=backend, reps=p)
+        #result = qaoa.compute_minimum_eigenvalue(hamiltonian)
+        #eigenstate = result.eigenstate
+
+        job = service.run(
+            program_id='qaoa',
+            options=options,
+            inputs=runtime_inputs
+        )
+        result = job.result()
+        eigenstate = result['eigenstate']
+
+        keys, values = zip(*eigenstate.items())
+        energies = abs(np.asarray(list(hamiltonian.eval(DictStateFn({k: 1 for k, _ in eigenstate.items()})).primitive.values())))
         res_df = pd.DataFrame({'binary': keys, 'prob_squared': values, 'energy': energies})
         prob_zero = sum(res_df[res_df['energy'] == 0]['prob_squared'] ** 2)
         print(prob_zero)
