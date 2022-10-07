@@ -1,0 +1,5 @@
+,car_type,entry_node_index,entry_timestamp,exit_node_index,entry_energy
+0,0,1,950,3,0.82
+1,1,2,2492,3,0.3
+2,1,2,2551,3,0.28
+3,0,1,2069,3,0.46
