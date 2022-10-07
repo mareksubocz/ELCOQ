@@ -2,6 +2,7 @@ import numpy as np
 from datasetgenerator import DatasetGenerator
 from datetime import datetime
 import utils
+import annealing
 
 logdir = 'logdir' + '/' + datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 instance_name = 'a4'
@@ -17,4 +18,7 @@ dsg.chargers = np.asarray(instance_info['chargers'])
 dsg.car_types_battery = car_info['capacity'].values
 dsg.car_types_consumptions = car_info.values[:, 1:]
 
-instance, feasible_solution = dsg.generate_car_instances(1000000, 0.5)
+instance, feasible_solution = dsg.generate_car_instances(1000000, 0.1)
+
+collision_matrix, im = annealing.instance_to_matrix(instance,car_info, instance_info['nodes'], instance_info['stations'], instance_info['available_car_speeds'], charging_speed=22)
+a = 1
