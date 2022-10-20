@@ -2,7 +2,6 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib
 
 #path = 'logdir/2022-10-03_09-45-46/small_instance'
 path = 'logdir/ibmq_kolkata/small_instance'
